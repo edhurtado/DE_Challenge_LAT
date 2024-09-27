@@ -60,8 +60,25 @@ async def process_json_chunk(
     
     return filtered_json
 
-async def count_unique_values():
-    pass
+def count_unique_values(
+        filtered_json: List[Dict[str, Any]], 
+        regex_col: str,
+        required_columns:list=None):
+
+    count_json = []
+
+    for entry in filtered_json:
+        if regex_col in entry:
+            counts = defaultdict()
+            for item in entry[regex_col]:
+                counts[item] += 1
+            if required_columns:
+                for key in reversed(required_columns):
+                    counts = {entry[key]: counts}
+            count_json.append(counts)
+
+    return count_json
+
 
 async def unify_counts():
     pass
@@ -81,3 +98,4 @@ async def process_and_count_json_file(
     for i in range(0, len(json_data), chunk_size):
         chunk = json_data[i:i + chunk_size]
         filtered_json = await process_json_chunk(chunk, keys, regex_col, regex)
+        counts, unique_counts = count_unique_values(filtered_json, regex_col)
