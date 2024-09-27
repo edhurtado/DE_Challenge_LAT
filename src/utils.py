@@ -42,8 +42,23 @@ async def download_and_load_json_from_drive(file_URL:str=FILE_URL):
     json_data = await load_json_lines('temp.json')
     return json_data
 
-async def process_json_chunk():
-    pass
+async def process_json_chunk(
+        json_chunk: List[Dict[str, Any]],
+        keys: List[str],
+        regex_col: str,
+        regex: str):
+    
+    filtered_json = []
+    regex_pattern = re.compile(regex)
+    
+    for entry in json_chunk:
+        filtered_entry = {key: entry.get(key) for key in keys if key in entry}
+        if regex_col in entry:
+            matches = regex_pattern.findall(entry[regex_col])
+            filtered_entry[regex_col] = matches if matches else []
+        filtered_json.append(filtered_entry)
+    
+    return filtered_json
 
 async def count_unique_values():
     pass
@@ -51,8 +66,18 @@ async def count_unique_values():
 async def unify_counts():
     pass
 
-async def process_and_count_json_file(keys:List[str], regex_col:str, chunk_size:int=5e3):
+async def process_and_count_json_file(
+        keys:List[str], 
+        regex_col:str, 
+        regex:str, 
+        chunk_size:int=5e3):
     global FILE_URL
 
     json_data = await download_and_load_json_from_drive(FILE_URL)
+    
+    all_counts = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+    overall_counts = defaultdict(int)
 
+    for i in range(0, len(json_data), chunk_size):
+        chunk = json_data[i:i + chunk_size]
+        filtered_json = await process_json_chunk(chunk, keys, regex_col, regex)
