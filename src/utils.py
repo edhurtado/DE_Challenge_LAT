@@ -16,6 +16,7 @@ from collections import defaultdict
 # 3. Convertir en sets (obtener valores únicos)
 # 4. Contar valor especifico.
 FILE_URL = "https://drive.google.com/file/d/1ig2ngoXFTxP5Pa8muXo02mDTFexZzsis/"
+FILE_URL = "https://drive.google.com/file/d/1LRFKh7e-O7IP3IhEyTWlL8RBhaAapWtv/" #test file
 
 async def load_json_lines(file_path):
     data = []
@@ -60,7 +61,7 @@ async def process_json_chunk(
     
     return filtered_json
 
-def count_unique_values(
+async def count_unique_values(
         filtered_json: List[Dict[str, Any]], 
         regex_col: str,
         required_columns:list=None):
@@ -79,9 +80,47 @@ def count_unique_values(
 
     return count_json
 
+async def get_keys(my_dict:dict, keys:list=None):
+    if isinstance(keys, list):
+        for key, value in my_dict.items():
+            keys.append(key)
+            if isinstance(value, dict):
+                get_keys(value, keys)
+    return keys
 
-async def unify_counts():
-    pass
+async def unify_dicts(dict1:dict, dict2:dict, keys):
+    def recursive_update(d1, d2, keys):
+        if len(keys) == 1:
+            if keys[0] in d1 and keys[0] in d2:
+                d1[keys[0]] += d2[keys[0]]
+        else:
+            key = keys[0]
+            if key in d1 and key in d2:
+                recursive_update(d1[key], d2[key], keys[1:])
+    
+    recursive_update(dict1, dict2, keys)
+    return dict1
+
+async def unify_dicts_recursive(dict1, dict2):
+    for key in dict2:
+        if key in dict1:
+            if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+                unify_dicts_recursive(dict1[key], dict2[key])
+            else:
+                dict1[key] += dict2[key]
+        else:
+            dict1[key] = dict2[key]
+    return dict1
+
+async def unify_counts(counts: List[Dict[str, Any]], base_keys: List[str]):
+    consolidated = defaultdict(base_keys)
+
+    for count in counts:
+        json_keys = []
+        json_keys = get_keys(counts[0], json_keys)
+        consolidated = unify_dicts(consolidated, count, json_keys)
+
+    return consolidated
 
 async def process_and_count_json_file(
         keys:List[str], 
@@ -92,10 +131,17 @@ async def process_and_count_json_file(
 
     json_data = await download_and_load_json_from_drive(FILE_URL)
     
-    all_counts = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
-    overall_counts = defaultdict(int)
+    all_counts = dict()
 
     for i in range(0, len(json_data), chunk_size):
         chunk = json_data[i:i + chunk_size]
         filtered_json = await process_json_chunk(chunk, keys, regex_col, regex)
-        counts, unique_counts = count_unique_values(filtered_json, regex_col)
+        counts = count_unique_values(filtered_json, regex_col)
+
+        # Unificar por chunk
+        json_keys = []
+        base_json_keys = get_keys(counts[0], json_keys)
+        unified_chunk = unify_counts(counts, base_json_keys)
+        all_counts = await unify_dicts_recursive(all_counts, unified_chunk)
+        
+    return all_counts
