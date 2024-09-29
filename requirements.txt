@@ -6,3 +6,5 @@ duckdb==0.6.0
 asyncio==3.12.5
 numba==0.56.4
 pyarrow==10.0.1
+requests==2.32.3
+aiofiles==23.1.0
