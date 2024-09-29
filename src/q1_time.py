@@ -1,6 +1,5 @@
 import utils
 import datetime
-import time
 import pathlib
 import os
 from typing import List, Tuple
@@ -12,8 +11,7 @@ TEMP_FILE_NAME = os.path.join(current_path, "tweets.json.zip")
 
 def q1_time(file_path: str) -> List[Tuple[datetime.date, str]]:
     global FILE_URL, TEMP_FILE_NAME
-    start_time = time.perf_counter()
-    
+
     # Defining configuration parameters
     keys = ["date", ["user", "username"]]
     regex_col = "username"
@@ -54,15 +52,11 @@ def q1_time(file_path: str) -> List[Tuple[datetime.date, str]]:
         max_user = max_user[0][0]
         result.append(tuple([max_datetime, max_user]))
 
-    end_time = time.perf_counter()
-    elapsed_time = end_time - start_time
-    print(f"Tiempo de ejecución: {elapsed_time:.2f} segundos")
-
     return result
 
 if __name__ == "__main__":
-    #test_file = os.path.join(current_path, "tweets_sample.json")
-    result = q1_time(None)
-    #result = q1_time(test_file)
+    test_file = os.path.join(current_path, "tweets_sample.json")
+    #result = q1_time(None)
+    result = q1_time(test_file)
     print(result)
     
