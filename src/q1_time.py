@@ -10,7 +10,7 @@ current_path = pathlib.Path(__file__).parent.resolve()
 FILE_URL = "https://drive.google.com/uc?id=1ig2ngoXFTxP5Pa8muXo02mDTFexZzsis"
 TEMP_FILE_NAME = os.path.join(current_path, "tweets.json.zip")
 
-def q1_time(file_path: str=None) -> List[Tuple[datetime.date, str]]:
+def q1_time(file_path: str) -> List[Tuple[datetime.date, str]]:
     global FILE_URL, TEMP_FILE_NAME
     start_time = time.perf_counter()
     
@@ -62,7 +62,7 @@ def q1_time(file_path: str=None) -> List[Tuple[datetime.date, str]]:
 
 if __name__ == "__main__":
     #test_file = os.path.join(current_path, "tweets_sample.json")
-    result = q1_time()
+    result = q1_time(None)
     #result = q1_time(test_file)
     print(result)
     
