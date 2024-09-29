@@ -1,32 +1,20 @@
 import heapq
-import requests
 import zipfile
 import time
 import json
 import re
 import os
-import asyncio
-import aiofiles
 import gdown
-from io import BytesIO
-from typing import List, Dict, Any, Tuple, Union
+from typing import List, Dict, Any
 from collections import defaultdict
 import pathlib
 
-# 1. Funcion para leer JSON y convertirlos en chunks
-# 2. Limpiar con Regex lo que no se desea y separarlos
-# 3. Convertir en sets (obtener valores únicos)
-# 4. Contar valor especifico.
 FILE_URL = "https://drive.google.com/uc?id=1ig2ngoXFTxP5Pa8muXo02mDTFexZzsis"
 FILE_ID = "1ig2ngoXFTxP5Pa8muXo02mDTFexZzsis"
 current_path = pathlib.Path(__file__).parent.resolve()
 FILE_NAME = os.path.join(current_path, "tweets.json.zip")
-#EMOJI_REGEX = r'\d+(.*?)(?:\u263a|\U0001f645)'
 EMOJI_REGEX = "[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F700-\U0001F77F\U0001F780-\U0001F7FF\U0001F800-\U0001F8FF\U0001F900-\U0001F9FF\U0001FA00-\U0001FA6F\U0001FA70-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+"
-#EMOJI_REGEX = r"[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U00002702-\U000027B0\U000024C2-\U0001F251]+"
 MENTION_REGEX = r"@(\w+)"
-#FILE_URL = "https://drive.google.com/uc?id=1LRFKh7e-O7IP3IhEyTWlL8RBhaAapWtv" #test file
-FILE_ID = "1LRFKh7e-O7IP3IhEyTWlL8RBhaAapWtv" #Test File
 
 def load_json_lines(file_path):
     data = []
@@ -39,7 +27,6 @@ def download_and_load_json_from_drive(file_url:str=FILE_URL, file_name:str=FILE_
     
     raw_file = gdown.download(file_url, file_name, quiet=False)
 
-    #with open(raw_file) as file:
     with zipfile.ZipFile(raw_file) as zip_file:
             json_files = [file for file in zip_file.namelist() if file.endswith(".json")]
             if not json_files:
@@ -77,7 +64,7 @@ def process_json_chunk(
     for entry in json_chunk:
         filtered_entry = {}
 
-        # Iteramos sobre las keys para obtener los valores
+        # Iterate over keys to get values
         for key in keys:
             if isinstance(key, list):
                 temp_dict = entry
@@ -91,15 +78,14 @@ def process_json_chunk(
             else:
                 if key in entry:
                     value = clean_date(entry[key])
-                    #value = entry[key].split("T")[0]
                     filtered_entry[key] = value
 
         if regex_col in entry:
             matches = regex_pattern.findall(entry[regex_col])
             if matches:
-                if alphanumeric_pattern.match(matches[0]): #Si es mención u otro tipo de patron, no debe separarse
+                if alphanumeric_pattern.match(matches[0]): #If it's a mention don't split
                     filtered_entry[regex_col] = matches
-                else: # Solo los emojis deberían ser separados
+                else: # Only emojis should spplited
                     filtered_entry[regex_col] = flatten_list(matches)
             else:
                 filtered_entry[regex_col] = [""]
@@ -177,14 +163,12 @@ def unify_dicts_on_keys(dict1:dict, dict2:dict, keys):
             if keys[0] in d2:
                 if keys[0] not in d1:
                     d1[keys[0]] = 0
-            #if keys[0] in d1 and keys[0] in d2:
                 d1[keys[0]] += d2[keys[0]]
         else:
             key = keys[0]
             if key in d2:
                 if key not in d1:
                     d1[key] = {}
-            #if key in d1 and key in d2:
                 recursive_update(d1[key], d2[key], keys[1:])
     
     recursive_update(dict1, dict2, keys)
@@ -233,7 +217,7 @@ def process_and_count_json_file(
         filtered_json = process_json_chunk(chunk, keys, regex_col, regex)
         counts = count_unique_values(filtered_json, regex_col, count_keys)
 
-        # Unificar por chunk
+        # Unify by chunk
         json_keys = []
         base_json_keys = get_keys(counts[0], json_keys)
         unified_chunk = unify_counts(counts, base_json_keys, inner_keys=inner_keys)
@@ -249,10 +233,8 @@ if __name__=="__main__":
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
 
-    print("Conteo final de valores únicos en 'username':")
-    #print(count)
     cons_dict = consolidate_dict(count)
     max_value = get_nth_value_from_dict(cons_dict, 10, False)
     print(cons_dict)
     print(max_value)
-    print(f"Tiempo de ejecución secuencial: {elapsed_time:.2f} segundos")
+    print(f"Tiempo de ejecución: {elapsed_time:.2f} segundos")
