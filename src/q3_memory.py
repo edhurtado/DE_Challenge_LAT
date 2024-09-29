@@ -1,9 +1,10 @@
-# El top 10 histórico de usuarios (username) más influyentes en función del conteo de las menciones (@) que registra cada uno de ellos. Debe incluir las siguientes funciones
 from typing import List, Tuple
 import dask.dataframe as dd
 import utils
+import time
 import pathlib
 import os
+from memory_profiler import memory_usage
 
 current_path = pathlib.Path(__file__).parent.resolve()
 FILE_URL = "https://drive.google.com/uc?id=1ig2ngoXFTxP5Pa8muXo02mDTFexZzsis"
@@ -22,7 +23,10 @@ def extract_mentions(text_series):
 def q3_memory(file_path: str) -> List[Tuple[str, int]]:
     global TEMP_FILE_NAME, FILE_URL
     required_cols = ["content"]
+    remove_flag = False
+
     if not file_path:
+        remove_flag = True
         # Download & Load JSON Zipped file from Google Drive
         utils.download_and_load_json_from_drive(FILE_URL, TEMP_FILE_NAME)
         os.remove(TEMP_FILE_NAME)
@@ -37,10 +41,21 @@ def q3_memory(file_path: str) -> List[Tuple[str, int]]:
     )
 
     result = metion_counts.nlargest(10).compute().items()
-    os.remove(file_path)
+    if remove_flag:
+        os.remove(file_path)
 
     # Return result as requested
     return [(emoji, count) for emoji, count in result]
+
+def run_q3_memory(file_path: str) -> None:
+    start_time = time.time()
+    
+    mem_usage = memory_usage((q3_memory, (file_path,)))
+    
+    end_time = time.time()
+    
+    print(f"Memory usage (MB): {max(mem_usage) - min(mem_usage)}")
+    print(f"Execution time (seconds): {end_time - start_time}")
 
 if __name__=="__main__":
     test_file = os.path.join(current_path, "tweets_sample.json")

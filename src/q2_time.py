@@ -1,6 +1,8 @@
 import utils
 import pathlib
 import os
+import time
+from memory_profiler import memory_usage
 from typing import List, Tuple
 
 current_path = pathlib.Path(__file__).parent.resolve()
@@ -44,6 +46,16 @@ def q2_time(file_path: str) -> List[Tuple[str, int]]:
     max_value = utils.get_nth_value_from_dict(consolidated, 10, False)
 
     return max_value
+
+def run_q2_time(file_path: str) -> None:
+    start_time = time.time()
+    
+    mem_usage = memory_usage((q2_time, (file_path,)))
+    
+    end_time = time.time()
+    
+    print(f"Memory usage (MB): {max(mem_usage) - min(mem_usage)}")
+    print(f"Execution time (seconds): {end_time - start_time}")
 
 if __name__ == "__main__":
     test_file = os.path.join(current_path, "tweets_sample.json")

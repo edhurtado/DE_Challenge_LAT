@@ -1,9 +1,11 @@
 import utils
+import time
 import datetime
 import pathlib
 import os
 from typing import List, Tuple
 from datetime import datetime
+from memory_profiler import memory_usage
 
 current_path = pathlib.Path(__file__).parent.resolve()
 FILE_URL = "https://drive.google.com/uc?id=1ig2ngoXFTxP5Pa8muXo02mDTFexZzsis"
@@ -53,6 +55,16 @@ def q1_time(file_path: str) -> List[Tuple[datetime.date, str]]:
         result.append(tuple([max_datetime, max_user]))
 
     return result
+
+def run_q1_time(file_path: str) -> None:
+    start_time = time.time()
+    
+    mem_usage = memory_usage((q1_time, (file_path,)))
+    
+    end_time = time.time()
+    
+    print(f"Memory usage (MB): {max(mem_usage) - min(mem_usage)}")
+    print(f"Execution time (seconds): {end_time - start_time}")
 
 if __name__ == "__main__":
     test_file = os.path.join(current_path, "tweets_sample.json")
