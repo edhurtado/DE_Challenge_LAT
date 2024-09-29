@@ -1,39 +1,16 @@
 from typing import List, Tuple
+import time
 from datetime import datetime
 import os
 import pathlib
 import re
-import dask
-import json
 import dask.dataframe as dd
-import pandas as pd
 import utils
+from memory_profiler import memory_usage
 
 current_path = pathlib.Path(__file__).parent.resolve()
 FILE_URL = "https://drive.google.com/uc?id=1ig2ngoXFTxP5Pa8muXo02mDTFexZzsis"
 TEMP_FILE_NAME = os.path.join(current_path, "tweets.json.zip")
-
-# def q1_memory(file_path: str) -> List[Tuple[datetime.date, str]]:
-#     df = dd.read_csv(file_path, usecols=['date', 'username'])
-#     df['date'] = dd.to_datetime(df['date']).dt.date
-#     top_dates = df['date'].value_counts().nlargest(10).compute()
-#     result = [(date, df[df['date'] == date]['username'].value_counts().nlargest(1).index[0]) for date in top_dates.index]
-#     return result
-
-
-# def q1_memory(file_path: str) -> List[Tuple[datetime.date, str]]:
-#     required_cols = ["date", "user"]
-#     df = pd.read_json(file_path, lines=True)[required_cols]
-#     user_normalized = pd.json_normalize(df['user'])
-#     cleaned_df = df.drop(columns=['user']).join(user_normalized[['username']]).copy()
-
-#     del df, user_normalized
-
-#     cleaned_df['date'] = pd.to_datetime(cleaned_df['date']).dt.date
-#     print(cleaned_df.head())
-#     top_dates = cleaned_df['date'].value_counts().nlargest(10)
-#     result = [(date, cleaned_df[cleaned_df['date'] == date]['username'].value_counts().nlargest(1).index[0]) for date in top_dates.index]
-#     return result
 
 def extract_json_username(user_json):
     match = re.search(r"'username':\s*'([^']*)'", user_json)
@@ -46,8 +23,10 @@ def q1_memory(file_path: str) -> List[Tuple[datetime.date, str]]:
     global TEMP_FILE_NAME, FILE_URL
     required_cols = ["date", "user"]
     result = []
+    remove_flag = False
 
     if not file_path:
+        remove_flag = True
         # Download & Load JSON Zipped file from Google Drive
         utils.download_and_load_json_from_drive(FILE_URL, TEMP_FILE_NAME)
         os.remove(TEMP_FILE_NAME)
@@ -70,13 +49,26 @@ def q1_memory(file_path: str) -> List[Tuple[datetime.date, str]]:
         # Adding to the list
         if not top_usernames.empty:
             result.append((date, top_usernames.index[0]))
-    os.remove(file_path)
+    if remove_flag:
+        print(file_path, remove_flag)
+        os.remove(file_path)
 
     return result
+
+def run_q1_memory(file_path: str) -> None:
+    start_time = time.time()
+    
+    mem_usage = memory_usage((q1_memory, (file_path,)))
+    
+    end_time = time.time()
+    
+    print(f"Memory usage (MB): {max(mem_usage) - min(mem_usage)}")
+    print(f"Execution time (seconds): {end_time - start_time}")
 
 if __name__ == "__main__":
     test_file = os.path.join(current_path, "tweets_sample.json")
     #test_file = "temp.json"
-    #result = q1_memory(None)
-    result = q1_memory(test_file)
+    #test_file = "test_file.json"
+    result = q1_memory(None)
+    #result = q1_memory(test_file)
     print(result)
